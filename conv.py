@@ -95,3 +95,60 @@ def pool3d_pad(Data,Kernel,mode,Padding,Stride):
 #pool2d_pad(torch.tensor([[1.,2,3],[4,5,6],[5,6,7]]),(2,2),'mean',(1,1),(1,1))
 #pool3d(Data=torch.tensor([[[1,2,3],[4,5,6]],[[7,8,9],[1,2,3]]]),Kernel=(2,2,2),mode='max')
 #pool3d_pad(Data=torch.tensor([[[1,2,3],[4,5,6]],[[7,8,9],[1,2,3]]]),Kernel=(2,2,2),mode='max',Padding=(0,0,0),Stride=(1,1,1))
+#定义卷积层操作无padding
+#下面是二维样本特征时多样本多输出的卷积层
+def convnet_2d(Data,Kernel,bias,Padding,Stride):
+    Y=torch.zeros((Data.shape[0],Kernel.shape[0],(Data.shape[1]-Kernel.shape[1]+2*Padding[0]+1)//(Stride[0]),(Data.shape[2]-Kernel.shape[2]+2*Padding[1]+1)//(Stride[1])))
+    #第几个样本
+    for i in range(Y.shape[0]):
+        #第几个输出内核
+        for j in range(Y.shape[1]):
+            Y[i,j,:,:]=corr2d_pad(Data[i,:,:].reshape(Data.shape[1:]),Kernel[j,:,:].reshape(Kernel.shape[1:]),Padding,Stride)
+            Y[i,j,:,:]+=bias[j]        
+    Y=1/(1+torch.exp(-Y))
+    return Y
+#测试
+#Kernel=torch.randn((4,3,3),requires_grad=True)
+#bias=torch.randn((Kernel.shape[0],1),requires_grad=True)
+#convnet_2d(torch.randn(1,7,7),Kernel,bias,Padding=(1,1),Stride=(1,1))
+#下面是三维样本特征时多样本多输出的卷积层
+def convnet_3d(Data,Kernel,bias,Padding,Stride):
+    Y=torch.zeros((Data.shape[0],Kernel.shape[0],(Data.shape[1]-Kernel.shape[1]+2*Padding[0]+1)//(Stride[0]),(Data.shape[2]-Kernel.shape[2]+2*Padding[1]+1)//(Stride[1]),(Data.shape[3]-Kernel.shape[3]+2*Padding[2]+1)//(Stride[2])))
+    for i in range(Y.shape[0]):
+        for j in range(Y.shape[1]):
+            Y[i,j,:,:,:]=corr3d_pad(Data[i,:,:,:].reshape(Data.shape[1:]),Kernel[j,:,:,:].reshape(Kernel.shape[1:]),Padding,Stride)
+            Y[i,j,:,:,:]+=bias[j]
+    Y=1/(1+torch.exp(-Y))
+    return Y
+#测试
+#Kernel=torch.randn((4,3,3,3),requires_grad=True)
+#bias=torch.randn((Kernel.shape[0],1),requires_grad=True)
+#convnet_3d(torch.randn(1,7,7,7),Kernel,bias,Padding=(1,1,1),Stride=(1,1,1))
+#下面是二维样本特征多样本多输出的汇聚层。
+def poolnet_2d(Data,Kernel,mode,Padding,Stride):
+    Y=torch.zeros((Data.shape[0],Data.shape[1],(Data.shape[2]-Kernel[0]+2*Padding[0]+1)//(Stride[0]),(Data.shape[3]-Kernel[1]+2*Padding[1]+1)//(Stride[1])))
+    for i in range(Y.shape[0]):
+        for j in range(Y.shape[1]):
+            Y[i,j,:,:]=pool2d_pad(Data[i,j,:,:].reshape(Data.shape[2:]),Kernel,mode,Padding,Stride)
+    return Y
+#测试
+#Kernel=torch.randn((4,3,3),requires_grad=True)
+#bias=torch.randn((Kernel.shape[0],1),requires_grad=True)
+#Y=convnet_2d(torch.randn(1,7,7),Kernel,bias,Padding=(1,1),Stride=(1,1))
+#print(Y)
+#Z=poolnet_2d(Y,Kernel=(3,3),mode='max',Padding=(1,1),Stride=(1,1))
+#print(Z)
+#下面是三维样本特征多样本多输出的汇聚层
+def poolnet_3d(Data,Kernel,mode,Padding,Stride):
+    Y=torch.zeros((Data.shape[0],Data.shape[1],(Data.shape[2]-Kernel[0]+2*Padding[0]+1)//(Stride[0]),(Data.shape[3]-Kernel[1]+2*Padding[1]+1)//(Stride[1]),(Data.shape[4]-Kernel[2]+2*Padding[2]+1)//(Stride[2])))
+    for i in range(Y.shape[0]):
+        for j in range(Y.shape[1]):
+            Y[i,j,:,:,:]=pool3d_pad(Data[i,j,:,:,:].reshape(Data.shape[2:]),Kernel,mode,Padding,Stride)
+    return Y
+#测试
+#Kernel=torch.randn((4,3,3,3),requires_grad=True)
+#bias=torch.randn((Kernel.shape[0],1),requires_grad=True)
+#Y=convnet_3d(torch.randn(1,7,7,7),Kernel,bias,Padding=(1,1,1),Stride=(1,1,1))
+#print(Y)
+#Z=poolnet_3d(Y,Kernel=(3,3,3),mode='max',Padding=(1,1,1),Stride=(1,1,1))
+#print(Z)
